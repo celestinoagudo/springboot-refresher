@@ -13,21 +13,22 @@ import org.springframework.stereotype.Service;
 @Service
 public class ApplicationUserService implements UserDetailsService {
 
-    private final ApplicationUserDao applicationUserDao;
+  private final ApplicationUserDao applicationUserDao;
 
-    @Autowired
-    public ApplicationUserService(final @Qualifier("postgre") ApplicationUserDao applicationUserDao) {
-        this.applicationUserDao = applicationUserDao;
-    }
+  @Autowired
+  public ApplicationUserService(final @Qualifier("postgre") ApplicationUserDao applicationUserDao) {
+    this.applicationUserDao = applicationUserDao;
+  }
 
-    @Override
-    public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
-        return applicationUserDao
-                .selectApplicationUserByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User '%s' is not found".formatted(username)));
-    }
+  @Override
+  public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
+    return applicationUserDao
+        .selectApplicationUserByUsername(username)
+        .orElseThrow(
+            () -> new UsernameNotFoundException("User '%s' is not found".formatted(username)));
+  }
 
-    public ApplicationUser createApplicationUserAccount(final UserAccount userAccount) {
-        return applicationUserDao.createApplicationUserAccount(userAccount);
-    }
+  public ApplicationUser createApplicationUserAccount(final UserAccount userAccount) {
+    return applicationUserDao.createApplicationUserAccount(userAccount);
+  }
 }

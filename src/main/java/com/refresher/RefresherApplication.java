@@ -14,22 +14,26 @@ import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
 @EnableCaching
-@SecurityScheme(name = "jwt", scheme = "bearer", type = SecuritySchemeType.HTTP, bearerFormat = "JWT")
+@SecurityScheme(
+    name = "jwt",
+    scheme = "bearer",
+    type = SecuritySchemeType.HTTP,
+    bearerFormat = "JWT")
 public class RefresherApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(RefresherApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(RefresherApplication.class, args);
+  }
 
-    @Bean
-    @Autowired
-    CommandLineRunner commandLineRunner(
-            final ApplicationUserService applicationUserService,
-            final StudentRepository studentRepository,
-            final CourseRepository courseRepository) {
-        return args -> {
-            //            DataGenerator.generateStudents(studentRepository, courseRepository);
-            //            DataGenerator.generateApplicationUsers(applicationUserService);
-        };
-    }
+  @Bean
+  @Autowired
+  CommandLineRunner commandLineRunner(
+      final ApplicationUserService applicationUserService,
+      final StudentRepository studentRepository,
+      final CourseRepository courseRepository) {
+    return args -> {
+      //            DataGenerator.generateStudents(studentRepository, courseRepository);
+      //            DataGenerator.generateApplicationUsers(applicationUserService);
+    };
+  }
 }
