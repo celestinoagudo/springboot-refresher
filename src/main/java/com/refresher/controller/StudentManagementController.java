@@ -19,12 +19,11 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 @SecurityRequirement(name = "jwt")
 @Tag(name = "Student Management Controller", description = "Student Maintenance APIs")
-@Controller
+@RestController
 @RequestMapping("api/management/v1/students")
 public class StudentManagementController {
 
