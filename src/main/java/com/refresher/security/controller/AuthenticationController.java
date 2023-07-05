@@ -16,15 +16,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 @Tag(
     name = "Authentication Controller",
     description = "Application User Registration/Authentication APIs")
-@RestController
+@Controller
 @RequestMapping("api/v1/security")
 public class AuthenticationController {
 
@@ -69,7 +69,7 @@ public class AuthenticationController {
             })
       })
   @PostMapping("/register")
-  public ResponseEntity<ApplicationResponse> register(final @RequestBody UserAccount userAccount) {
+  public ResponseEntity<ApplicationResponse> register(@RequestBody final UserAccount userAccount) {
     var applicationResponse =
         applicationResponseMapper.getApplicationResponse(
             ApplicationResponse.ResponseStatus.SUCCESS.name(),
@@ -109,7 +109,7 @@ public class AuthenticationController {
       })
   @PostMapping("/authenticate")
   public ResponseEntity<ApplicationResponse> authenticate(
-      final @RequestBody AuthenticationRequest authenticationRequest) {
+      @RequestBody final AuthenticationRequest authenticationRequest) {
     var applicationResponse =
         applicationResponseMapper.getApplicationResponse(
             ApplicationResponse.ResponseStatus.SUCCESS.name(),

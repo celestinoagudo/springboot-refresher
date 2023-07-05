@@ -19,11 +19,12 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 @SecurityRequirement(name = "jwt")
 @Tag(name = "Student Management Controller", description = "Student Maintenance APIs")
-@RestController
+@Controller
 @RequestMapping("api/management/v1/students")
 public class StudentManagementController {
 
@@ -71,7 +72,7 @@ public class StudentManagementController {
   @PutMapping(path = "/book/{id}")
   @PreAuthorize("hasAuthority(@environment.getProperty('app.authority.student-write'))")
   public ResponseEntity<ApplicationResponse> addBooks(
-      @RequestParam final List<BookDto> books, @PathVariable("id") final Long studentId) {
+      @RequestBody final List<BookDto> books, @PathVariable("id") final Long studentId) {
     var applicationResponse =
         applicationResponseMapper.getApplicationResponse(
             OK.getReasonPhrase(), studentService.addBooks(studentId, books), OK);
