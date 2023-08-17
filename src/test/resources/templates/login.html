@@ -1,0 +1,43 @@
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1, shrink-to-fit=no"
+          name="viewport">
+    <meta content="" name="description">
+    <meta content="" name="author">
+    <title>Login</title>
+    <link
+            crossorigin="anonymous"
+            href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css"
+            integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M"
+            rel="stylesheet">
+    <link
+            crossorigin="anonymous"
+            href="https://getbootstrap.com/docs/4.0/examples/signin/signin.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <form action="/login" class="form-signin" method="post">
+        <h2 class="form-signin-heading">Please log in</h2>
+        <p>
+            <label class="sr-only" for="username">Username</label> <input
+                autofocus="" class="form-control" id="username" name="username"
+                placeholder="Username" required="" type="text">
+        </p>
+        <p>
+            <label class="sr-only" for="password">Password</label> <input
+                class="form-control" id="password" name="password" placeholder="Password"
+                required="" type="password">
+        </p>
+        <p>
+            Remember me? <label class="sr-only" for="remember-me"></label> <input
+                class="form-control" id="remember-me" name="remember-me"
+                type="checkbox">
+        </p>
+        <button class="btn btn-lg btn-primary btn-block" type="submit">Log
+            in
+        </button>
+    </form>
+</div>
+</body>
+</html>

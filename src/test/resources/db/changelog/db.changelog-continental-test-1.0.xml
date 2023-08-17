@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet author="celestino.agudo" id="changelog-continental-1.0.0"
+               failOnError="true">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="STUDENT"/>
+            </not>
+        </preConditions>
+        <createTable tableName="STUDENT">
+            <column name="ID" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="AGE" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="EMAIL" type="VARCHAR">
+                <constraints nullable="false"/>
+            </column>
+            <column name="FIRST_NAME" type="VARCHAR">
+                <constraints nullable="false"/>
+            </column>
+            <column name="LAST_NAME" type="VARCHAR">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="STUDENT"
+                       columnNames="ID"
+                       constraintName="student_pkey"
+                       schemaName="public"/>
+        <addUniqueConstraint
+                columnNames="EMAIL"
+                constraintName="student_email_unique"
+                disabled="false"
+                schemaName="public"
+                tableName="STUDENT"
+                validate="true"/>
+        <createSequence cacheSize="20"
+                        cycle="false"
+                        dataType="BIGINT"
+                        incrementBy="1"
+                        maxValue="9223372036854775800"
+                        minValue="1"
+                        schemaName="public"
+                        sequenceName="student_sequence"
+                        startValue="1"/>
+    </changeSet>
+    <changeSet author="celestino.agudo" id="changelog-continental-1.0.1"
+               failOnError="true">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="BOOK"/>
+            </not>
+        </preConditions>
+        <createTable tableName="BOOK">
+            <column name="ID" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="CREATED_AT" type="TIMESTAMP WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="STUDENT_ID" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="NAME" type="VARCHAR">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="BOOK"
+                       columnNames="ID"
+                       constraintName="book_pkey"
+                       schemaName="public"/>
+        <addForeignKeyConstraint baseColumnNames="STUDENT_ID"
+                                 baseTableName="BOOK"
+                                 constraintName="student_id_fkey"
+                                 referencedColumnNames="ID"
+                                 referencedTableName="STUDENT"
+                                 onUpdate="NO ACTION"
+                                 onDelete="NO ACTION"/>
+        <createSequence cacheSize="20"
+                        cycle="false"
+                        dataType="BIGINT"
+                        incrementBy="1"
+                        maxValue="9223372036854775800"
+                        minValue="1"
+                        schemaName="public"
+                        sequenceName="book_sequence"
+                        startValue="1"/>
+    </changeSet>
+    <changeSet author="celestino.agudo" id="changelog-continental-1.0.2"
+               failOnError="true">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="COURSE"/>
+            </not>
+        </preConditions>
+        <createTable tableName="COURSE">
+            <column name="ID" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="DEPARTMENT" type="VARCHAR">
+                <constraints nullable="false"/>
+            </column>
+            <column name="NAME" type="VARCHAR">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="COURSE"
+                       columnNames="ID"
+                       constraintName="course_pkey"
+                       schemaName="public"/>
+        <createSequence cacheSize="20"
+                        cycle="false"
+                        dataType="BIGINT"
+                        incrementBy="1"
+                        maxValue="9223372036854775800"
+                        minValue="1"
+                        schemaName="public"
+                        sequenceName="course_sequence"
+                        startValue="1"/>
+    </changeSet>
+    <changeSet author="celestino.agudo" id="changelog-continental-1.0.3"
+               failOnError="true">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="ENROLLMENT"/>
+            </not>
+        </preConditions>
+        <createTable tableName="ENROLLMENT">
+            <column name="CREATED_AT" type="TIMESTAMP WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="COURSE_ID" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="STUDENT_ID" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="ENROLLMENT"
+                       columnNames="COURSE_ID,STUDENT_ID"
+                       constraintName="enrollment_pkey"
+                       schemaName="public"/>
+        <addForeignKeyConstraint baseColumnNames="STUDENT_ID"
+                                 baseTableName="ENROLLMENT"
+                                 constraintName="enrollment_student_id_fkey"
+                                 referencedColumnNames="ID"
+                                 referencedTableName="STUDENT"
+                                 onUpdate="NO ACTION"
+                                 onDelete="NO ACTION"/>
+        <addForeignKeyConstraint baseColumnNames="COURSE_ID"
+                                 baseTableName="ENROLLMENT"
+                                 constraintName="enrollment_course_id_fkey"
+                                 referencedColumnNames="ID"
+                                 referencedTableName="COURSE"
+                                 onUpdate="NO ACTION"
+                                 onDelete="NO ACTION"/>
+    </changeSet>
+    <changeSet author="celestino.agudo" id="changelog-continental-1.0.4"
+               failOnError="true">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="STUDENT_CARD"/>
+            </not>
+        </preConditions>
+        <createTable tableName="STUDENT_CARD">
+            <column name="ID" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="STUDENT_ID" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="CARD_NUMBER" type="VARCHAR">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="STUDENT_CARD"
+                       columnNames="ID"
+                       constraintName="student_card_pkey"
+                       schemaName="public"/>
+        <addForeignKeyConstraint baseColumnNames="STUDENT_ID"
+                                 baseTableName="STUDENT_CARD"
+                                 constraintName="student_id_fkey"
+                                 referencedColumnNames="ID"
+                                 referencedTableName="STUDENT"
+                                 onUpdate="NO ACTION"
+                                 onDelete="NO ACTION"/>
+        <addUniqueConstraint
+                columnNames="STUDENT_ID"
+                constraintName="student_card_student_id_key"
+                disabled="false"
+                schemaName="public"
+                tableName="STUDENT_CARD"
+                validate="true"/>
+    </changeSet>
+    <changeSet author="celestino.agudo" id="changelog-continental-1.0.5"
+               failOnError="true">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="USER_ACCOUNT"/>
+            </not>
+        </preConditions>
+        <createTable tableName="USER_ACCOUNT">
+            <column name="ID" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="IS_ACTIVE" type="BOOLEAN" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="STUDENT_ID" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="PASSWORD" type="VARCHAR">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ROLE" type="VARCHAR">
+                <constraints nullable="false"/>
+            </column>
+            <column name="USERNAME" type="VARCHAR">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="USER_ACCOUNT"
+                       columnNames="ID"
+                       constraintName="user_account_pkey"
+                       schemaName="public"/>
+        <addUniqueConstraint
+                columnNames="USERNAME"
+                constraintName="username_unique"
+                disabled="false"
+                schemaName="public"
+                tableName="USER_ACCOUNT"
+                validate="true"/>
+    </changeSet>
+</databaseChangeLog>
