@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet author="celestino.agudo" id="changelog-continental-2.0.0"
+               failOnError="true">
+        <insert tableName="STUDENT">
+            <column name="AGE" value="24"/>
+            <column name="ID" valueComputed="(SELECT nextval('public.&quot;student_sequence&quot;'))"/>
+            <column name="EMAIL" value="wileygerlach@continental.edu"/>
+            <column name="FIRST_NAME" value="Wiley"/>
+            <column name="LAST_NAME" value="Gerlach"/>
+        </insert>
+        <insert tableName="STUDENT">
+            <column name="AGE" value="27"/>
+            <column name="ID" valueComputed="(SELECT nextval('public.&quot;student_sequence&quot;'))"/>
+            <column name="EMAIL" value="rosannblick@continental.edu"/>
+            <column name="FIRST_NAME" value="Rosann"/>
+            <column name="LAST_NAME" value="Blick"/>
+        </insert>
+        <insert tableName="STUDENT">
+            <column name="AGE" value="32"/>
+            <column name="ID" valueComputed="(SELECT nextval('public.&quot;student_sequence&quot;'))"/>
+            <column name="EMAIL" value="lowellgerhold@continental.edu"/>
+            <column name="FIRST_NAME" value="Lowell"/>
+            <column name="LAST_NAME" value="Gerhold"/>
+        </insert>
+    </changeSet>
+    <changeSet author="celestino.agudo" id="changelog-continental-2.0.1"
+               failOnError="true">
+        <insert tableName="STUDENT_CARD">
+            <column name="ID" valueComputed="(SELECT nextval('public.&quot;student_card_sequence&quot;'))"/>
+            <column name="STUDENT_ID"
+                    valueComputed="(SELECT s.id FROM STUDENT s WHERE s.email='wileygerlach@continental.edu')"/>
+            <column name="CARD_NUMBER" value="422877273684846"/>
+        </insert>
+        <insert tableName="STUDENT_CARD">
+            <column name="ID" valueComputed="(SELECT nextval('public.&quot;student_card_sequence&quot;'))"/>
+            <column name="STUDENT_ID"
+                    valueComputed="(SELECT s.id FROM STUDENT s WHERE s.email='rosannblick@continental.edu')"/>
+            <column name="CARD_NUMBER" value="416500162427661"/>
+        </insert>
+        <insert tableName="STUDENT_CARD">
+            <column name="ID" valueComputed="(SELECT nextval('public.&quot;student_card_sequence&quot;'))"/>
+            <column name="STUDENT_ID"
+                    valueComputed="(SELECT s.id FROM STUDENT s WHERE s.email='lowellgerhold@continental.edu')"/>
+            <column name="CARD_NUMBER" value="913029454877872"/>
+        </insert>
+    </changeSet>
+    <changeSet author="celestino.agudo" id="changelog-continental-2.0.2"
+               failOnError="true">
+        <insert tableName="BOOK">
+            <column name="ID" valueComputed="(SELECT nextval('public.&quot;book_sequence&quot;'))"/>
+            <column name="STUDENT_ID"
+                    valueComputed="(SELECT s.id FROM STUDENT s WHERE s.email='wileygerlach@continental.edu')"/>
+            <column name="CREATED_AT" value="2023-07-03 16:33:16.962561"/>
+            <column name="NAME" value="Dance Dance Dance"/>
+        </insert>
+        <insert tableName="BOOK">
+            <column name="ID" valueComputed="(SELECT nextval('public.&quot;book_sequence&quot;'))"/>
+            <column name="STUDENT_ID"
+                    valueComputed="(SELECT s.id FROM STUDENT s WHERE s.email='rosannblick@continental.edu')"/>
+            <column name="CREATED_AT" value="2023-07-03 16:33:17.421219"/>
+            <column name="NAME" value="The Wives of Bath"/>
+        </insert>
+        <insert tableName="BOOK">
+            <column name="ID" valueComputed="(SELECT nextval('public.&quot;book_sequence&quot;'))"/>
+            <column name="STUDENT_ID"
+                    valueComputed="(SELECT s.id FROM STUDENT s WHERE s.email='lowellgerhold@continental.edu')"/>
+            <column name="CREATED_AT" value="2023-07-03 16:33:17.478223"/>
+            <column name="NAME" value="Many Waters"/>
+        </insert>
+    </changeSet>
+    <changeSet author="celestino.agudo" id="changelog-continental-2.0.3"
+               failOnError="true">
+        <insert tableName="COURSE">
+            <column name="ID" valueComputed="(SELECT nextval('public.&quot;course_sequence&quot;'))"/>
+            <column name="DEPARTMENT" value="Many Waters"/>
+            <column name="NAME" value="Associate Degree in Commerce"/>
+        </insert>
+        <insert tableName="COURSE">
+            <column name="ID" valueComputed="(SELECT nextval('public.&quot;course_sequence&quot;'))"/>
+            <column name="DEPARTMENT" value="Computers and Shoes"/>
+            <column name="NAME" value="Master of Communications"/>
+        </insert>
+        <insert tableName="COURSE">
+            <column name="ID" valueComputed="(SELECT nextval('public.&quot;course_sequence&quot;'))"/>
+            <column name="DEPARTMENT" value="Toys"/>
+            <column name="NAME" value="Master of Biomedical Science"/>
+        </insert>
+    </changeSet>
+    <changeSet author="celestino.agudo" id="changelog-continental-2.0.4"
+               failOnError="true">
+        <insert tableName="ENROLLMENT">
+            <column name="COURSE_ID"
+                    valueComputed="(SELECT c.id FROM COURSE c WHERE c.name='Associate Degree in Commerce')"/>
+            <column name="CREATED_AT" value="2023-07-03 16:33:17.212223"/>
+            <column name="STUDENT_ID"
+                    valueComputed="(SELECT s.id FROM STUDENT s WHERE s.email='wileygerlach@continental.edu')"/>
+        </insert>
+        <insert tableName="ENROLLMENT">
+            <column name="COURSE_ID"
+                    valueComputed="(SELECT c.id FROM COURSE c WHERE c.name='Master of Communications')"/>
+            <column name="CREATED_AT" value="2023-07-03 16:33:17.446217"/>
+            <column name="STUDENT_ID"
+                    valueComputed="(SELECT s.id FROM STUDENT s WHERE s.email='rosannblick@continental.edu')"/>
+        </insert>
+        <insert tableName="ENROLLMENT">
+            <column name="COURSE_ID"
+                    valueComputed="(SELECT c.id FROM COURSE c WHERE c.name='Master of Biomedical Science')"/>
+            <column name="CREATED_AT" value="2023-07-03 16:33:17.501226"/>
+            <column name="STUDENT_ID"
+                    valueComputed="(SELECT s.id FROM STUDENT s WHERE s.email='lowellgerhold@continental.edu')"/>
+        </insert>
+    </changeSet>
+    <changeSet author="celestino.agudo" id="changelog-continental-2.0.5"
+               failOnError="true">
+        <insert tableName="USER_ACCOUNT">
+            <column name="ID" valueComputed="(SELECT nextval('public.&quot;user_account_sequence&quot;'))"/>
+            <column name="IS_ACTIVE" value="true"/>
+            <column name="USERNAME" value="admin"/>
+            <column name="PASSWORD" value="$2a$10$y0rGHqh6JRTonWquX/AOsuZ8.9WRHfb1c2256kfXHIrTNk42Qy2Le"/>
+            <column name="ROLE" value="ADMIN"/>
+        </insert>
+        <insert tableName="USER_ACCOUNT">
+            <column name="ID" valueComputed="(SELECT nextval('public.&quot;user_account_sequence&quot;'))"/>
+            <column name="IS_ACTIVE" value="true"/>
+            <column name="USERNAME" value="admin_trainee"/>
+            <column name="PASSWORD" value="$2a$10$CcnptxJypgV1zvNtb3gBXO39rjFTaO5QrmOZpTsEWh0kLYYTXIR3a"/>
+            <column name="ROLE" value="ADMIN_TRAINEE"/>
+        </insert>
+        <insert tableName="USER_ACCOUNT">
+            <column name="ID" valueComputed="(SELECT nextval('public.&quot;user_account_sequence&quot;'))"/>
+            <column name="IS_ACTIVE" value="true"/>
+            <column name="USERNAME" value="student"/>
+            <column name="PASSWORD" value="$2a$10$fV.ToQ7c5vZW68x99K1BmeGW7brNJCQ4ZvJSGTZAKqUvFdg6Zp89W"/>
+            <column name="ROLE" value="STUDENT"/>
+            <column name="STUDENT_ID"
+                    valueComputed="(SELECT s.id FROM STUDENT s WHERE s.email='wileygerlach@continental.edu')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

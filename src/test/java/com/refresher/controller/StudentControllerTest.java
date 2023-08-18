@@ -19,26 +19,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-@SpringBootTest
 @ExtendWith(SpringExtension.class)
+@SpringBootTest
 @AutoConfigureMockMvc
 @SuppressWarnings("all")
 class StudentControllerTest {
 
   private static final String SUCCESS = "SUCCESS";
-
   private static final String ERROR = "ERROR";
-
   private static final String ACCESS_DENIED = "Access Denied";
-
   @Autowired private MockMvc mockMvc;
-
   private ObjectMapper objectMapper;
 
   @BeforeEach
@@ -53,12 +48,13 @@ class StudentControllerTest {
       roles = {"ADMIN"})
   @DisplayName("It should return student records when pagination is enabled.")
   void itShouldReturnPaginatedStudents() throws Exception {
+    final int EXPECTED_COUNT = 1;
     final MvcResult result =
         mockMvc
             .perform(
                 get("/api/v1/students/paged")
                     .param("page", "0")
-                    .param("items", "10")
+                    .param("items", "1")
                     .accept(APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk())
             .andReturn();
@@ -68,7 +64,7 @@ class StudentControllerTest {
     final List<StudentDto> students = (List<StudentDto>) parsedResponse.getData();
     assertAll(
         () -> assertEquals(SUCCESS, parsedResponse.getStatus()),
-        () -> assertEquals(10, students.size()));
+        () -> assertEquals(EXPECTED_COUNT, students.size()));
   }
 
   @Test
@@ -77,6 +73,7 @@ class StudentControllerTest {
       roles = {"STUDENT"})
   @DisplayName("It should return all students from the database.")
   void itShouldReturnStudents() throws Exception {
+    final int EXPECTED_COUNT = 3;
     final MvcResult mvcResult =
         mockMvc
             .perform(get("/api/v1/students").accept(APPLICATION_JSON_VALUE))
@@ -89,7 +86,7 @@ class StudentControllerTest {
     final List<StudentDto> students = (List<StudentDto>) applicationResponse.getData();
     assertAll(
         () -> assertEquals(SUCCESS, applicationResponse.getStatus()),
-        () -> assertNotEquals(10, students.size()));
+        () -> assertEquals(EXPECTED_COUNT, students.size()));
   }
 
   @Test
@@ -99,12 +96,13 @@ class StudentControllerTest {
   @DisplayName(
       "It should return all students from the database where first/last names matched with parameter.")
   void itShouldReturnStudentWithMatchingName() throws Exception {
-    final String nameToMatch = "John";
+    final String NAME_TO_MATCH = "Rosann";
+    final int EXPECTED_COUNT = 1;
     final MvcResult result =
         mockMvc
             .perform(
                 get("/api/v1/students/name")
-                    .param("student-name", nameToMatch)
+                    .param("student-name", NAME_TO_MATCH)
                     .accept(APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk())
             .andReturn();
@@ -114,19 +112,19 @@ class StudentControllerTest {
     final List<StudentDto> students = (ArrayList<StudentDto>) parsedResponse.getData();
     assertAll(
         () -> assertEquals(SUCCESS, parsedResponse.getStatus()),
-        () -> assertNotEquals(0, students.size()),
-        () -> assertTrue(result.getResponse().getContentAsString().contains("John")));
+        () -> assertEquals(EXPECTED_COUNT, students.size()),
+        () -> assertTrue(result.getResponse().getContentAsString().contains(NAME_TO_MATCH)));
   }
 
   @Test
   @DisplayName("It should not authorize access to endpoint when no user is specified.")
   void itShouldNotAuthorize() throws Exception {
-    final String nameToMatch = "John";
+    final String NAME_TO_MATCH = "Rosann";
     final MvcResult result =
         mockMvc
             .perform(
                 get("/api/v1/students/name")
-                    .param("student-name", nameToMatch)
+                    .param("student-name", NAME_TO_MATCH)
                     .accept(APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().is4xxClientError())
             .andReturn();
@@ -144,12 +142,12 @@ class StudentControllerTest {
       roles = {"UNKNOWN"})
   @DisplayName("It should not grant access to endpoint when role defined is not valid.")
   void itShouldNotGrantAccess() throws Exception {
-    final String nameToMatch = "John";
+    final String NAME_TO_MATCH = "Rosann";
     final MvcResult result =
         mockMvc
             .perform(
                 get("/api/v1/students/name")
-                    .param("student-name", nameToMatch)
+                    .param("student-name", NAME_TO_MATCH)
                     .accept(APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().is4xxClientError())
             .andReturn();

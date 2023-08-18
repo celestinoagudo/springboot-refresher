@@ -182,9 +182,18 @@
                        columnNames="ID"
                        constraintName="student_card_pkey"
                        schemaName="public"/>
+        <createSequence cacheSize="20"
+                        cycle="false"
+                        dataType="BIGINT"
+                        incrementBy="1"
+                        maxValue="9223372036854775800"
+                        minValue="1"
+                        schemaName="public"
+                        sequenceName="student_card_sequence"
+                        startValue="1"/>
         <addForeignKeyConstraint baseColumnNames="STUDENT_ID"
                                  baseTableName="STUDENT_CARD"
-                                 constraintName="student_id_fkey"
+                                 constraintName="card_student_id_fkey"
                                  referencedColumnNames="ID"
                                  referencedTableName="STUDENT"
                                  onUpdate="NO ACTION"
@@ -211,9 +220,7 @@
             <column name="IS_ACTIVE" type="BOOLEAN" defaultValue="false">
                 <constraints nullable="false"/>
             </column>
-            <column name="STUDENT_ID" type="BIGINT">
-                <constraints nullable="false"/>
-            </column>
+            <column name="STUDENT_ID" type="BIGINT"/>
             <column name="PASSWORD" type="CLOB">
                 <constraints nullable="false"/>
             </column>
@@ -228,6 +235,15 @@
                        columnNames="ID"
                        constraintName="user_account_pkey"
                        schemaName="public"/>
+        <createSequence cacheSize="20"
+                        cycle="false"
+                        dataType="BIGINT"
+                        incrementBy="1"
+                        maxValue="9223372036854775800"
+                        minValue="1"
+                        schemaName="public"
+                        sequenceName="user_account_sequence"
+                        startValue="1"/>
         <addUniqueConstraint
                 columnNames="USERNAME"
                 constraintName="username_unique"
