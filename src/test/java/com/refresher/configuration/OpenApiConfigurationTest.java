@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -25,6 +26,7 @@ class OpenApiConfigurationTest {
   }
 
   @Test
+  @DisplayName("It should return the Open API Configuration")
   void shouldReturnApiConfiguration() {
     final OpenAPI openAPI = unitUnderTest.apiConfiguration();
     assertAll(

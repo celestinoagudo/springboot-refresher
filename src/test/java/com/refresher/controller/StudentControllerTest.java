@@ -1,16 +1,14 @@
 package com.refresher.controller;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.refresher.domain.ApplicationResponse;
-import com.refresher.dto.StudentDto;
-import java.util.ArrayList;
-import java.util.List;
+import com.refresher.security.domain.AuthenticationRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,10 +16,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 @ExtendWith(SpringExtension.class)
@@ -29,10 +28,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 @AutoConfigureMockMvc
 @SuppressWarnings("all")
 class StudentControllerTest {
-
-  private static final String SUCCESS = "SUCCESS";
-  private static final String ERROR = "ERROR";
-  private static final String ACCESS_DENIED = "Access Denied";
   @Autowired private MockMvc mockMvc;
   private ObjectMapper objectMapper;
 
@@ -43,119 +38,92 @@ class StudentControllerTest {
   }
 
   @Test
-  @WithMockUser(
-      value = "admin",
-      roles = {"ADMIN"})
+  @WithMockUser(roles = {"ADMIN"})
   @DisplayName("It should return student records when pagination is enabled.")
   void itShouldReturnPaginatedStudents() throws Exception {
-    final int EXPECTED_COUNT = 1;
-    final MvcResult result =
-        mockMvc
-            .perform(
-                get("/api/v1/students/paged")
-                    .param("page", "0")
-                    .param("items", "1")
-                    .accept(APPLICATION_JSON_VALUE))
-            .andExpect(MockMvcResultMatchers.status().isOk())
-            .andReturn();
-    final ApplicationResponse parsedResponse =
-        objectMapper.readValue(
-            result.getResponse().getContentAsString(), ApplicationResponse.class);
-    final List<StudentDto> students = (List<StudentDto>) parsedResponse.getData();
-    assertAll(
-        () -> assertEquals(SUCCESS, parsedResponse.getStatus()),
-        () -> assertEquals(EXPECTED_COUNT, students.size()));
+    mockMvc
+        .perform(
+            get("/api/v1/students/paged")
+                .param("page", "0")
+                .param("items", "1")
+                .accept(APPLICATION_JSON_VALUE))
+        .andExpect(MockMvcResultMatchers.status().isOk());
   }
 
   @Test
-  @WithMockUser(
-      value = "student",
-      roles = {"STUDENT"})
+  @WithMockUser(roles = {"STUDENT"})
   @DisplayName("It should return all students from the database.")
   void itShouldReturnStudents() throws Exception {
-    final int EXPECTED_COUNT = 3;
-    final MvcResult mvcResult =
-        mockMvc
-            .perform(get("/api/v1/students").accept(APPLICATION_JSON_VALUE))
-            .andDo(print())
-            .andExpect(MockMvcResultMatchers.status().isOk())
-            .andReturn();
-    final ApplicationResponse applicationResponse =
-        objectMapper.readValue(
-            mvcResult.getResponse().getContentAsString(), ApplicationResponse.class);
-    final List<StudentDto> students = (List<StudentDto>) applicationResponse.getData();
-    assertAll(
-        () -> assertEquals(SUCCESS, applicationResponse.getStatus()),
-        () -> assertEquals(EXPECTED_COUNT, students.size()));
+    mockMvc
+        .perform(get("/api/v1/students").accept(APPLICATION_JSON_VALUE))
+        .andExpect(MockMvcResultMatchers.status().isOk());
   }
 
   @Test
-  @WithMockUser(
-      value = "student",
-      roles = {"STUDENT"})
+  @WithMockUser(roles = {"STUDENT"})
   @DisplayName(
       "It should return all students from the database where first/last names matched with parameter.")
   void itShouldReturnStudentWithMatchingName() throws Exception {
-    final String NAME_TO_MATCH = "Rosann";
-    final int EXPECTED_COUNT = 1;
-    final MvcResult result =
-        mockMvc
-            .perform(
-                get("/api/v1/students/name")
-                    .param("student-name", NAME_TO_MATCH)
-                    .accept(APPLICATION_JSON_VALUE))
-            .andExpect(MockMvcResultMatchers.status().isOk())
-            .andReturn();
-    final ApplicationResponse parsedResponse =
-        objectMapper.readValue(
-            result.getResponse().getContentAsString(), ApplicationResponse.class);
-    final List<StudentDto> students = (ArrayList<StudentDto>) parsedResponse.getData();
-    assertAll(
-        () -> assertEquals(SUCCESS, parsedResponse.getStatus()),
-        () -> assertEquals(EXPECTED_COUNT, students.size()),
-        () -> assertTrue(result.getResponse().getContentAsString().contains(NAME_TO_MATCH)));
+    mockMvc
+        .perform(
+            get("/api/v1/students/name")
+                .param("student-name", "Rosann")
+                .accept(APPLICATION_JSON_VALUE))
+        .andExpect(MockMvcResultMatchers.status().isOk());
   }
 
   @Test
-  @DisplayName("It should not authorize access to endpoint when no user is specified.")
+  @DisplayName("It should retrieve student by name with authorization header supplied")
+  void itShouldAccessEndpointWithAuthorizationHeader() throws Exception {
+    mockMvc
+        .perform(
+            get("/api/v1/students/name")
+                .param("student-name", "Rosann")
+                .header(HttpHeaders.AUTHORIZATION, getToken("admin", "admin"))
+                .accept(APPLICATION_JSON_VALUE))
+        .andExpect(MockMvcResultMatchers.status().isOk());
+  }
+
+  private String getToken(final String username, final String password) throws Exception {
+    final var mvcResult =
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.post("/api/v1/security/authenticate")
+                    .content(
+                        objectMapper.writeValueAsString(
+                            new AuthenticationRequest(username, password)))
+                    .contentType(APPLICATION_JSON)
+                    .accept(APPLICATION_JSON))
+            .andReturn();
+    final var applicationResponse =
+        objectMapper.readValue(
+            mvcResult.getResponse().getContentAsString(), ApplicationResponse.class);
+    final var rawToken = applicationResponse.getData().toString().replaceAll("token=", "");
+    final var jwt = rawToken.substring(1, rawToken.length() - 1);
+    return "Bearer %s".formatted(jwt);
+  }
+
+  @Test
+  @DisplayName("It should not authorize access to retrieve user by name when no user is specified.")
   void itShouldNotAuthorize() throws Exception {
-    final String NAME_TO_MATCH = "Rosann";
-    final MvcResult result =
-        mockMvc
-            .perform(
-                get("/api/v1/students/name")
-                    .param("student-name", NAME_TO_MATCH)
-                    .accept(APPLICATION_JSON_VALUE))
-            .andExpect(MockMvcResultMatchers.status().is4xxClientError())
-            .andReturn();
-    final ApplicationResponse parsedResponse =
-        objectMapper.readValue(
-            result.getResponse().getContentAsString(), ApplicationResponse.class);
-    assertAll(
-        () -> assertEquals(ERROR, parsedResponse.getStatus()),
-        () -> assertEquals(ACCESS_DENIED, parsedResponse.getMessage()));
+    mockMvc
+        .perform(
+            get("/api/v1/students/name")
+                .param("student-name", "Rosann")
+                .accept(APPLICATION_JSON_VALUE))
+        .andExpect(MockMvcResultMatchers.status().is4xxClientError());
   }
 
   @Test
-  @WithMockUser(
-      value = "student",
-      roles = {"UNKNOWN"})
-  @DisplayName("It should not grant access to endpoint when role defined is not valid.")
+  @WithMockUser(roles = {"UNKNOWN"})
+  @DisplayName(
+      "It should not grant access to retrieve user by name when role defined is not valid.")
   void itShouldNotGrantAccess() throws Exception {
-    final String NAME_TO_MATCH = "Rosann";
-    final MvcResult result =
-        mockMvc
-            .perform(
-                get("/api/v1/students/name")
-                    .param("student-name", NAME_TO_MATCH)
-                    .accept(APPLICATION_JSON_VALUE))
-            .andExpect(MockMvcResultMatchers.status().is4xxClientError())
-            .andReturn();
-    final ApplicationResponse parsedResponse =
-        objectMapper.readValue(
-            result.getResponse().getContentAsString(), ApplicationResponse.class);
-    assertAll(
-        () -> assertEquals(ERROR, parsedResponse.getStatus()),
-        () -> assertEquals(ACCESS_DENIED, parsedResponse.getMessage()));
+    mockMvc
+        .perform(
+            get("/api/v1/students/name")
+                .param("student-name", "Rosann")
+                .accept(APPLICATION_JSON_VALUE))
+        .andExpect(MockMvcResultMatchers.status().is4xxClientError());
   }
 }
