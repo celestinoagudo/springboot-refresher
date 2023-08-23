@@ -58,14 +58,16 @@ public class StudentService {
   public StudentDto addBooks(final Long id, final List<BookDto> bookTransferObjects) {
     logger.info("Adding books...");
     var student = getStudentById(id);
-    Function<List<BookDto>, List<Book>> transformToEntities =
-        transferObjects ->
-            transferObjects.stream()
-                .map(transferObject -> new Book(transferObject.getName(), now()))
-                .toList();
-    addBooks(student, transformToEntities.apply(bookTransferObjects));
+    addBooks(student, transformToEntities().apply(bookTransferObjects));
     studentRepository.save(student);
     return new StudentDto(student);
+  }
+
+  private Function<List<BookDto>, List<Book>> transformToEntities() {
+    return transferObjects ->
+        transferObjects.stream()
+            .map(transferObject -> new Book(transferObject.getName(), now()))
+            .toList();
   }
 
   @Transactional
@@ -159,20 +161,24 @@ public class StudentService {
 
   private StudentDto addStudent(final StudentDto studentTransferObject) {
     logger.info("Adding student...");
-    var courses = validateEnrollments(studentTransferObject.getEnrollments());
-    var studentCard = new StudentCard(new Faker().number().digits(cardNumberLength));
-    var student =
-        new Student(
-            studentTransferObject.getFirstName(),
-            studentTransferObject.getLastName(),
-            studentTransferObject.getEmail(),
-            studentTransferObject.getAge());
-    student.setStudentCard(studentCard);
+    var student = prepareAndGetStudent(studentTransferObject);
     addBooks(student, studentTransferObject.getBooks());
     var savedStudent = studentRepository.save(student);
-    addEnrollments(savedStudent, courses);
+    addEnrollments(savedStudent, validateEnrollments(studentTransferObject.getEnrollments()));
     studentTransferObject.setId(savedStudent.getId());
     return studentTransferObject;
+  }
+
+  private Student prepareAndGetStudent(final StudentDto transferObject) {
+    var student =
+        new Student(
+            transferObject.getFirstName(),
+            transferObject.getLastName(),
+            transferObject.getEmail(),
+            transferObject.getAge());
+    var studentCard = new StudentCard(new Faker().number().digits(cardNumberLength));
+    student.setStudentCard(studentCard);
+    return student;
   }
 
   private StudentDto updateStudent(final StudentDto studentTransferObject) {
@@ -191,16 +197,23 @@ public class StudentService {
       var existingEnrollments = new ArrayList<>(student.getEnrollments());
       var filteredEnrollments = new ArrayList<>(enrollments);
       existingEnrollments.forEach(
-          existingEnrollment -> {
-            var asTransferObject = new EnrollmentDto(existingEnrollment);
-            if (!enrollments.contains(asTransferObject)) {
-              student.unenroll(existingEnrollment);
-              return;
-            }
-            filteredEnrollments.remove(asTransferObject);
-          });
+          unenrollStudentIfNotInUpdatedEnrollments(enrollments, student, filteredEnrollments));
       addEnrollments(student, validateEnrollments(filteredEnrollments));
     }
+  }
+
+  private Consumer<Enrollment> unenrollStudentIfNotInUpdatedEnrollments(
+      final List<EnrollmentDto> enrollments,
+      final Student student,
+      final List<EnrollmentDto> filteredEnrollments) {
+    return existingEnrollment -> {
+      var asTransferObject = new EnrollmentDto(existingEnrollment);
+      if (!enrollments.contains(asTransferObject)) {
+        student.unenroll(existingEnrollment);
+        return;
+      }
+      filteredEnrollments.remove(asTransferObject);
+    };
   }
 
   private void processUpdatedBooks(final List<Book> books, final Student student) {
@@ -220,28 +233,32 @@ public class StudentService {
 
   private void addEnrollments(final Student student, final List<Course> courses) {
     if (isNotEmpty(courses)) {
-      courses.forEach(
-          course -> {
-            var enrollmentId = new EnrollmentId(student.getId(), course.getId());
-            var enrollment = new Enrollment(course, now(), enrollmentId, student);
-            student.enroll(enrollment);
-          });
+      courses.forEach(enrollStudent(student));
       studentRepository.save(student);
     }
   }
 
+  private Consumer<Course> enrollStudent(final Student student) {
+    return course -> {
+      var enrollmentId = new EnrollmentId(student.getId(), course.getId());
+      var enrollment = new Enrollment(course, now(), enrollmentId, student);
+      student.enroll(enrollment);
+    };
+  }
+
   private List<Course> validateAndFetchCourses(List<CourseDto> courseTransferObjects) {
-    return courseTransferObjects.stream()
-        .map(
-            course ->
-                courseRepository
-                    .selectCourseByNameAndDepartment(course.getName(), course.getDepartment())
-                    .orElseThrow(
-                        () ->
-                            new UniversityException(
-                                "Course is invalid '%s'".formatted(course),
-                                new IllegalArgumentException())))
-        .toList();
+    return courseTransferObjects.stream().map(toCourseIfValid()).toList();
+  }
+
+  private Function<CourseDto, Course> toCourseIfValid() {
+    return courseDto ->
+        courseRepository
+            .selectCourseByNameAndDepartment(courseDto.getName(), courseDto.getDepartment())
+            .orElseThrow(
+                () ->
+                    new UniversityException(
+                        "Course is invalid '%s'".formatted(courseDto),
+                        new IllegalArgumentException()));
   }
 
   private List<Course> validateEnrollments(final List<EnrollmentDto> enrollments) {
