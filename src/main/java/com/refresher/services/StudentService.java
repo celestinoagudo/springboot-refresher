@@ -59,13 +59,13 @@ public class StudentService {
   public StudentDto addBooksTo(final Long id, final List<BookDto> bookDataTransferObjects) {
     logger.info("Adding books...");
     var studentWithMatchingId = getStudentById(id);
-    final List<Book> bookEntities = transformToEntities().apply(bookDataTransferObjects);
+    final List<Book> bookEntities = transformToBookEntities().apply(bookDataTransferObjects);
     addBooksTo(studentWithMatchingId, bookEntities);
     studentRepository.save(studentWithMatchingId);
     return new StudentDto(studentWithMatchingId);
   }
 
-  private Function<List<BookDto>, List<Book>> transformToEntities() {
+  private Function<List<BookDto>, List<Book>> transformToBookEntities() {
     return bookDataTransferObjects -> {
       final Function<BookDto, Book> toBookEntity =
           dataTransferObject -> new Book(dataTransferObject.getName(), now());
@@ -101,7 +101,8 @@ public class StudentService {
       final Long studentId, final List<CourseDto> courseDataTransferObjects) {
     logger.info("Enrolling student to course...");
     var studentWithMatchingId = getStudentById(studentId);
-    final List<Course> validatedCourses = validateAndFetchCourses(courseDataTransferObjects);
+    final List<Course> validatedCourses =
+        validateSubmittedCoursesAndMapToEntities(courseDataTransferObjects);
     addEnrollmentsTo(studentWithMatchingId, validatedCourses);
     return new StudentDto(studentWithMatchingId);
   }
@@ -254,7 +255,8 @@ public class StudentService {
     };
   }
 
-  private List<Course> validateAndFetchCourses(List<CourseDto> courseDataTransferObjects) {
+  private List<Course> validateSubmittedCoursesAndMapToEntities(
+      List<CourseDto> courseDataTransferObjects) {
     return courseDataTransferObjects.stream().map(toCourseIfValid()).toList();
   }
 
@@ -274,7 +276,7 @@ public class StudentService {
       final List<EnrollmentDto> enrollmentsDataTransferObjects) {
     final Function<EnrollmentDto, CourseDto> toCourseEntity = EnrollmentDto::getCourse;
     if (isNotEmpty(enrollmentsDataTransferObjects)) {
-      return validateAndFetchCourses(
+      return validateSubmittedCoursesAndMapToEntities(
           enrollmentsDataTransferObjects.stream().map(toCourseEntity).toList());
     }
     return emptyList();
