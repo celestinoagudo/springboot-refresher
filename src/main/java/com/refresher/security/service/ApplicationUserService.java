@@ -3,6 +3,7 @@ package com.refresher.security.service;
 import com.refresher.security.domain.ApplicationUser;
 import com.refresher.security.domain.UserAccount;
 import com.refresher.security.user.dao.ApplicationUserDao;
+import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,10 +23,11 @@ public class ApplicationUserService implements UserDetailsService {
 
   @Override
   public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
+    final Supplier<UsernameNotFoundException> exceptionForUnrecognizedUsername =
+        () -> new UsernameNotFoundException("User '%s' is not found".formatted(username));
     return applicationUserDao
         .selectApplicationUserByUsername(username)
-        .orElseThrow(
-            () -> new UsernameNotFoundException("User '%s' is not found".formatted(username)));
+        .orElseThrow(exceptionForUnrecognizedUsername);
   }
 
   public ApplicationUser createApplicationUserAccount(final UserAccount userAccount) {

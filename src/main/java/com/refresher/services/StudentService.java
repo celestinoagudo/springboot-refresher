@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,7 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class StudentService {
 
   private final Logger logger = getLogger(StudentService.class);
-  private final Integer cardNumberLength;
+  private final Integer numberOfCharacters;
   private final CourseRepository courseRepository;
   private final StudentRepository studentRepository;
 
@@ -41,10 +42,10 @@ public class StudentService {
   public StudentService(
       final StudentRepository studentRepository,
       final CourseRepository courseRepository,
-      final @Value("${app.card-number.length}") Integer cardNumberLength) {
+      final @Value("${app.card-number.length}") Integer numberOfCharacters) {
     this.studentRepository = studentRepository;
     this.courseRepository = courseRepository;
-    this.cardNumberLength = cardNumberLength;
+    this.numberOfCharacters = numberOfCharacters;
   }
 
   @Transactional
@@ -55,33 +56,37 @@ public class StudentService {
         @CacheEvict(value = "studentTransferObjectsByName", allEntries = true),
         @CacheEvict(value = "studentTransferObjects", allEntries = true),
       })
-  public StudentDto addBooks(final Long id, final List<BookDto> bookTransferObjects) {
+  public StudentDto addBooksTo(final Long id, final List<BookDto> bookDataTransferObjects) {
     logger.info("Adding books...");
-    var student = getStudentById(id);
-    addBooks(student, transformToEntities().apply(bookTransferObjects));
-    studentRepository.save(student);
-    return new StudentDto(student);
+    var studentWithMatchingId = getStudentById(id);
+    final List<Book> bookEntities = transformToEntities().apply(bookDataTransferObjects);
+    addBooksTo(studentWithMatchingId, bookEntities);
+    studentRepository.save(studentWithMatchingId);
+    return new StudentDto(studentWithMatchingId);
   }
 
   private Function<List<BookDto>, List<Book>> transformToEntities() {
-    return transferObjects ->
-        transferObjects.stream()
-            .map(transferObject -> new Book(transferObject.getName(), now()))
-            .toList();
+    return bookDataTransferObjects -> {
+      final Function<BookDto, Book> toBookEntity =
+          dataTransferObject -> new Book(dataTransferObject.getName(), now());
+      return bookDataTransferObjects.stream().map(toBookEntity).toList();
+    };
   }
 
   @Transactional
   @Caching(
       evict = {
         @CacheEvict(value = "pagedStudentTransferObjects", allEntries = true),
-        @CacheEvict(value = "studentTransferObjectById", key = "{#studentTransferObject.getId()}"),
+        @CacheEvict(
+            value = "studentTransferObjectById",
+            key = "{#studentDataTransferObject.getId()}"),
         @CacheEvict(value = "studentTransferObjectsByName", allEntries = true),
         @CacheEvict(value = "studentTransferObjects", allEntries = true),
       })
-  public StudentDto addOrUpdateStudent(final StudentDto studentTransferObject) {
-    return isNull(studentTransferObject.getId())
-        ? addStudent(studentTransferObject)
-        : updateStudent(studentTransferObject);
+  public StudentDto addOrUpdateStudent(final StudentDto studentDataTransferObject) {
+    return isNull(studentDataTransferObject.getId())
+        ? addStudent(studentDataTransferObject)
+        : updateStudent(studentDataTransferObject);
   }
 
   @Transactional
@@ -93,11 +98,12 @@ public class StudentService {
         @CacheEvict(value = "studentTransferObjects", allEntries = true),
       })
   public StudentDto enrollToCourse(
-      final Long studentId, final List<CourseDto> courseTransferObjects) {
+      final Long studentId, final List<CourseDto> courseDataTransferObjects) {
     logger.info("Enrolling student to course...");
-    var student = getStudentById(studentId);
-    addEnrollments(student, validateAndFetchCourses(courseTransferObjects));
-    return new StudentDto(student);
+    var studentWithMatchingId = getStudentById(studentId);
+    final List<Course> validatedCourses = validateAndFetchCourses(courseDataTransferObjects);
+    addEnrollmentsTo(studentWithMatchingId, validatedCourses);
+    return new StudentDto(studentWithMatchingId);
   }
 
   @Transactional
@@ -110,9 +116,9 @@ public class StudentService {
       })
   public StudentDto removeStudent(final Long studentId) {
     logger.info("Removing student...");
-    var studentDto = new StudentDto(getStudentById(studentId));
+    var studentDataTransferObject = new StudentDto(getStudentById(studentId));
     studentRepository.deleteById(studentId);
-    return studentDto;
+    return studentDataTransferObject;
   }
 
   @Cacheable(
@@ -120,11 +126,11 @@ public class StudentService {
       key = "{#page, #itemsPerPage}",
       condition = "@environment.getProperty('app.enable-cache')",
       unless = "#result==null OR #result.isEmpty()")
-  public List<StudentDto> getPagedStudentRecords(final int page, final int itemsPerPage) {
-    logger.info("Getting student with pagination page {{}}, items {{}}", page, itemsPerPage);
-    return studentRepository.findAll(PageRequest.of(page, itemsPerPage)).stream()
-        .map(StudentDto::new)
-        .toList();
+  public List<StudentDto> getPagedStudentRecords(final int page, final int numberOfItems) {
+    logger.info("Getting student with pagination page {{}}, items {{}}", page, numberOfItems);
+    final PageRequest request = PageRequest.of(page, numberOfItems);
+    final Function<Student, StudentDto> toDataTransferObject = StudentDto::new;
+    return studentRepository.findAll(request).stream().map(toDataTransferObject).toList();
   }
 
   @Cacheable(
@@ -133,13 +139,12 @@ public class StudentService {
       condition = "@environment.getProperty('app.enable-cache')",
       unless = "#result==null")
   public StudentDto getStudentDtoById(final Long id) {
-    return studentRepository
-        .selectStudentById(id)
-        .orElseThrow(
-            () -> {
-              var message = "Student with id '%d' is not found".formatted(id);
-              return new UniversityException(message, new IllegalArgumentException(message));
-            });
+    final Supplier<UniversityException> exceptionForNonExistence =
+        () -> {
+          var message = "Student with id '%d' is not found".formatted(id);
+          return new UniversityException(message, new IllegalArgumentException(message));
+        };
+    return studentRepository.selectStudentById(id).orElseThrow(exceptionForNonExistence);
   }
 
   @Cacheable(
@@ -159,79 +164,82 @@ public class StudentService {
     return studentRepository.selectAll();
   }
 
-  private StudentDto addStudent(final StudentDto studentTransferObject) {
+  private StudentDto addStudent(final StudentDto studentDataTransferObject) {
     logger.info("Adding student...");
-    var student = prepareAndGetStudent(studentTransferObject);
-    addBooks(student, studentTransferObject.getBooks());
-    var savedStudent = studentRepository.save(student);
-    addEnrollments(savedStudent, validateEnrollments(studentTransferObject.getEnrollments()));
-    studentTransferObject.setId(savedStudent.getId());
-    return studentTransferObject;
+    var studentWithInitialFieldsSet = setInitialFieldsAndReturn(studentDataTransferObject);
+    addBooksTo(studentWithInitialFieldsSet, studentDataTransferObject.getBooks());
+    var persistedStudent = studentRepository.save(studentWithInitialFieldsSet);
+    var validatedCourses = validateCoursesInEnrollments(studentDataTransferObject.getEnrollments());
+    addEnrollmentsTo(persistedStudent, validatedCourses);
+    studentDataTransferObject.setId(persistedStudent.getId());
+    return studentDataTransferObject;
   }
 
-  private Student prepareAndGetStudent(final StudentDto transferObject) {
+  private Student setInitialFieldsAndReturn(final StudentDto studentDataTransferObject) {
     var student =
         new Student(
-            transferObject.getFirstName(),
-            transferObject.getLastName(),
-            transferObject.getEmail(),
-            transferObject.getAge());
-    var studentCard = new StudentCard(new Faker().number().digits(cardNumberLength));
+            studentDataTransferObject.getFirstName(),
+            studentDataTransferObject.getLastName(),
+            studentDataTransferObject.getEmail(),
+            studentDataTransferObject.getAge());
+    var studentCard = new StudentCard(new Faker().number().digits(numberOfCharacters));
     student.setStudentCard(studentCard);
     return student;
   }
 
-  private StudentDto updateStudent(final StudentDto studentTransferObject) {
+  private StudentDto updateStudent(final StudentDto studentDataTransferObject) {
     logger.info("Updating student...");
-    var existingStudent = getStudentById(studentTransferObject.getId());
-    setFields(studentTransferObject, existingStudent);
-    processUpdatedBooks(studentTransferObject.getBooks(), existingStudent);
-    processUpdatedEnrollments(studentTransferObject.getEnrollments(), existingStudent);
-    studentRepository.save(existingStudent);
-    return studentTransferObject;
+    var studentWithMatchingId = getStudentById(studentDataTransferObject.getId());
+    setInitialFields(studentDataTransferObject, studentWithMatchingId);
+    updateBooks(studentDataTransferObject.getBooks(), studentWithMatchingId);
+    updateEnrollments(studentDataTransferObject.getEnrollments(), studentWithMatchingId);
+    studentRepository.save(studentWithMatchingId);
+    return new StudentDto(studentWithMatchingId);
   }
 
-  private void processUpdatedEnrollments(
-      final List<EnrollmentDto> enrollments, final Student student) {
-    if (isNotEmpty(enrollments)) {
+  private void updateEnrollments(
+      final List<EnrollmentDto> enrollmentDataTransferObjects, final Student student) {
+    if (isNotEmpty(enrollmentDataTransferObjects)) {
       var existingEnrollments = new ArrayList<>(student.getEnrollments());
-      var filteredEnrollments = new ArrayList<>(enrollments);
+      var finalEnrollments = new ArrayList<>(enrollmentDataTransferObjects);
       existingEnrollments.forEach(
-          unenrollStudentIfNotInUpdatedEnrollments(enrollments, student, filteredEnrollments));
-      addEnrollments(student, validateEnrollments(filteredEnrollments));
+          unenrollStudentIfNotValidAndPrepareFinalEnrollments(
+              enrollmentDataTransferObjects, student, finalEnrollments));
+      final List<Course> validatedCourses = validateCoursesInEnrollments(finalEnrollments);
+      addEnrollmentsTo(student, validatedCourses);
     }
   }
 
-  private Consumer<Enrollment> unenrollStudentIfNotInUpdatedEnrollments(
-      final List<EnrollmentDto> enrollments,
+  private Consumer<Enrollment> unenrollStudentIfNotValidAndPrepareFinalEnrollments(
+      final List<EnrollmentDto> submittedEnrollments,
       final Student student,
-      final List<EnrollmentDto> filteredEnrollments) {
+      final List<EnrollmentDto> finalEnrollments) {
     return existingEnrollment -> {
-      var asTransferObject = new EnrollmentDto(existingEnrollment);
-      if (!enrollments.contains(asTransferObject)) {
+      var existingEnrollmentAsDataTransferObject = new EnrollmentDto(existingEnrollment);
+      if (!submittedEnrollments.contains(existingEnrollmentAsDataTransferObject)) {
         student.unenroll(existingEnrollment);
         return;
       }
-      filteredEnrollments.remove(asTransferObject);
+      finalEnrollments.remove(existingEnrollmentAsDataTransferObject);
     };
   }
 
-  private void processUpdatedBooks(final List<Book> books, final Student student) {
+  private void updateBooks(final List<Book> books, final Student student) {
     if (isNotEmpty(books)) {
       var existingBooks = new ArrayList<>(student.getBooks());
       existingBooks.forEach(student::removeBook);
-      addBooks(student, books);
+      addBooksTo(student, books);
     }
   }
 
-  private void setFields(final StudentDto studentTransferObject, final Student existingStudent) {
-    existingStudent.setAge(studentTransferObject.getAge());
-    existingStudent.setEmail(studentTransferObject.getEmail());
-    existingStudent.setFirstName(studentTransferObject.getFirstName());
-    existingStudent.setLastName(studentTransferObject.getLastName());
+  private void setInitialFields(final StudentDto studentDataTransferObject, final Student student) {
+    student.setAge(studentDataTransferObject.getAge());
+    student.setEmail(studentDataTransferObject.getEmail());
+    student.setFirstName(studentDataTransferObject.getFirstName());
+    student.setLastName(studentDataTransferObject.getLastName());
   }
 
-  private void addEnrollments(final Student student, final List<Course> courses) {
+  private void addEnrollmentsTo(final Student student, final List<Course> courses) {
     if (isNotEmpty(courses)) {
       courses.forEach(enrollStudent(student));
       studentRepository.save(student);
@@ -246,46 +254,48 @@ public class StudentService {
     };
   }
 
-  private List<Course> validateAndFetchCourses(List<CourseDto> courseTransferObjects) {
-    return courseTransferObjects.stream().map(toCourseIfValid()).toList();
+  private List<Course> validateAndFetchCourses(List<CourseDto> courseDataTransferObjects) {
+    return courseDataTransferObjects.stream().map(toCourseIfValid()).toList();
   }
 
   private Function<CourseDto, Course> toCourseIfValid() {
-    return courseDto ->
-        courseRepository
-            .selectCourseByNameAndDepartment(courseDto.getName(), courseDto.getDepartment())
-            .orElseThrow(
-                () ->
-                    new UniversityException(
-                        "Course is invalid '%s'".formatted(courseDto),
-                        new IllegalArgumentException()));
+    return courseDto -> {
+      final Supplier<UniversityException> exceptionForInvalidCourse =
+          () ->
+              new UniversityException(
+                  "Course is invalid '%s'".formatted(courseDto), new IllegalArgumentException());
+      return courseRepository
+          .selectCourseByNameAndDepartment(courseDto.getName(), courseDto.getDepartment())
+          .orElseThrow(exceptionForInvalidCourse);
+    };
   }
 
-  private List<Course> validateEnrollments(final List<EnrollmentDto> enrollments) {
-    if (isNotEmpty(enrollments)) {
-      return validateAndFetchCourses(enrollments.stream().map(EnrollmentDto::getCourse).toList());
+  private List<Course> validateCoursesInEnrollments(
+      final List<EnrollmentDto> enrollmentsDataTransferObjects) {
+    final Function<EnrollmentDto, CourseDto> toCourseEntity = EnrollmentDto::getCourse;
+    if (isNotEmpty(enrollmentsDataTransferObjects)) {
+      return validateAndFetchCourses(
+          enrollmentsDataTransferObjects.stream().map(toCourseEntity).toList());
     }
     return emptyList();
   }
 
   private Student getStudentById(final Long id) {
-    return studentRepository
-        .findById(id)
-        .orElseThrow(
-            () ->
-                new UniversityException(
-                    "Student with id '%d' is not found".formatted(id),
-                    new IllegalArgumentException()));
+    final Supplier<UniversityException> exceptionForNonExistence =
+        () ->
+            new UniversityException(
+                "Student with id '%d' is not found".formatted(id), new IllegalArgumentException());
+    return studentRepository.findById(id).orElseThrow(exceptionForNonExistence);
   }
 
-  private void addBooks(final Student student, final List<Book> books) {
+  private void addBooksTo(final Student student, final List<Book> books) {
+    Consumer<Book> setBookCreatedAtAndAddToStudent =
+        book -> {
+          book.setCreatedAt(now());
+          student.addBook(book);
+        };
     if (isNotEmpty(books)) {
-      Consumer<Book> setCreatedAtAndAddToStudent =
-          book -> {
-            book.setCreatedAt(now());
-            student.addBook(book);
-          };
-      books.forEach(setCreatedAtAndAddToStudent);
+      books.forEach(setBookCreatedAtAndAddToStudent);
     }
   }
 }

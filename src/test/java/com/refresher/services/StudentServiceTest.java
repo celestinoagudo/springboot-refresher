@@ -45,7 +45,7 @@ class StudentServiceTest {
     when(mockStudentRepository.findById(Mockito.anyLong())).thenReturn(Optional.empty());
     assertAll(
         () -> {
-          assertThrows(UniversityException.class, () -> unitUnderTest.addBooks(2L, getBooks()));
+          assertThrows(UniversityException.class, () -> unitUnderTest.addBooksTo(2L, getBooks()));
         },
         () -> {
           Mockito.verify(mockStudentRepository, Mockito.never()).save(Mockito.any(Student.class));

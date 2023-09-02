@@ -22,8 +22,8 @@ public class AuthenticationEntrypoint implements AuthenticationEntryPoint {
   public void commence(
       final HttpServletRequest request,
       final HttpServletResponse response,
-      final AuthenticationException authException)
+      final AuthenticationException authenticationException)
       throws IOException, ServletException {
-    resolver.resolveException(request, response, null, authException);
+    resolver.resolveException(request, response, null, authenticationException);
   }
 }

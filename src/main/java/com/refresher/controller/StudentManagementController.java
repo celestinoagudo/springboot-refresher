@@ -74,7 +74,7 @@ public class StudentManagementController {
       @RequestBody final List<BookDto> books, @PathVariable("id") final Long studentId) {
     var applicationResponse =
         applicationResponseMapper.getApplicationResponse(
-            OK.getReasonPhrase(), studentService.addBooks(studentId, books), OK);
+            OK.getReasonPhrase(), studentService.addBooksTo(studentId, books), OK);
     return new ResponseEntity<>(applicationResponse, OK);
   }
 

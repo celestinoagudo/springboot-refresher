@@ -1,5 +1,6 @@
 package com.refresher.util;
 
+import static com.refresher.domain.ApplicationResponse.ResponseStatus.ERROR;
 import static com.refresher.domain.ApplicationResponse.ResponseStatus.SUCCESS;
 
 import com.refresher.domain.ApplicationResponse;
@@ -27,7 +28,7 @@ public class ApplicationResponseMapper {
     applicationResponse.setProgramName(applicationName);
     applicationResponse.setVersion(version);
     applicationResponse.setDatetime(LocalDateTime.now());
-    applicationResponse.setStatus(SUCCESS.name());
+    applicationResponse.setStatus(status.value() >= 400 ? ERROR.name() : SUCCESS.name());
     applicationResponse.setCode(status.value());
     applicationResponse.setMessage(message);
     applicationResponse.setData(data);
